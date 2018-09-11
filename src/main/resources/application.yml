@@ -1,0 +1,12 @@
+spring:
+  hadoop:
+    fs-uri: hdfs://hdp-129:9000
+    config:
+      dfs.replication: 4
+      dfs.blocksize: 64m
+      dfs.permissions.enabled: false
+  datasource:
+      driver-class-name: com.mysql.jdbc.Driver
+      url: jdbc:mysql://192.168.2.189:3306/gwkj_dygzjcxt_test?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowMultiQueries=true
+      username: root
+      password: '@Password0918'
