@@ -1,7 +1,0 @@
-<configration>
-
-    <property>
-        <name>dfs.permissions</name>
-        <value>false</value>
-    </property>
-</configration>

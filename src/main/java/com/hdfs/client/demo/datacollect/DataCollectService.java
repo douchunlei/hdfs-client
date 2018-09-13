@@ -4,7 +4,6 @@ import com.google.common.base.CharMatcher;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.google.common.io.Files;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,17 +12,14 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.text.DateFormat;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
+import java.util.Date;
+import java.util.List;
+import java.util.UUID;
 
 /**
  * @Author : peter
@@ -45,51 +41,52 @@ public class DataCollectService {
     @Autowired
     private FsShell fsShell;
 
-    @Scheduled(cron = "0/3600 * * * * ?")
-    public void collect(){
-        log.info("long Min:{}",String.valueOf(Long.MIN_VALUE).length());
-        log.info("long Max:{}",String.valueOf(Long.MAX_VALUE).length());
-        log.info("每60秒执行一次");
-        String currentDate = new SimpleDateFormat("yyyy-MM-dd HH").format(new Date());
-        //定义日志源目录
-        File srcDir = new File(ACCESS_LOG_DIR);
-        if(srcDir.exists()){
-            srcDir.mkdirs();
-        }
-        File[] listFiles = srcDir.listFiles(new FilenameFilter() {
-            @Override
-            public boolean accept(File dir, String name) {
-                return name.startsWith("access.log.");
-            }
-        });
-        //将日志拷贝到待上传目录中
-        File uploadDir = new File(TO_UPLOAD_LOG_DIR);
-        Lists.newArrayList(listFiles).stream().forEach(f -> {
-            try {
-                FileUtils.moveToDirectory(f,uploadDir,true);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        });
-        //将文件从待上传目录拷贝到HDFS中
-        Lists.newArrayList(uploadDir.listFiles()).stream().forEach(f -> {
-            //上传到HDFS
-            fsShell.put(f.getAbsolutePath(),"/test/"+currentDate+"/access_log_"+ UUID.randomUUID().toString()+".log");
-            log.info("上传日志文件{}到目录{}成功",f.getAbsolutePath(),"/test/"+currentDate+"/");
-            //上传成功，将日志文件移动至备份目录
-            try {
-                FileUtils.moveToDirectory(f,new File(BAKUP_LOG_DIR+currentDate),true);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            log.info("备份日志文件{}到目录{}成功",f.getAbsolutePath(),BAKUP_LOG_DIR);
-        });
-    }
+//    @Scheduled(cron = "0 0/60 * * * ?")
+//    public void collect(){
+//        log.info("long Min:{}",String.valueOf(Long.MIN_VALUE).length());
+//        log.info("long Max:{}",String.valueOf(Long.MAX_VALUE).length());
+//        log.info("每60分钟执行一次");
+//        String currentDate = new SimpleDateFormat("yyyy-MM-dd HH").format(new Date());
+//        //定义日志源目录
+//        File srcDir = new File(ACCESS_LOG_DIR);
+//        if(srcDir.exists()){
+//            srcDir.mkdirs();
+//        }
+//        File[] listFiles = srcDir.listFiles(new FilenameFilter() {
+//            @Override
+//            public boolean accept(File dir, String name) {
+//                return name.startsWith("access.log.");
+//            }
+//        });
+//        //将日志拷贝到待上传目录中
+//        File uploadDir = new File(TO_UPLOAD_LOG_DIR);
+//        Lists.newArrayList(listFiles).stream().forEach(f -> {
+//            try {
+//                FileUtils.moveToDirectory(f,uploadDir,true);
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//        });
+//        //将文件从待上传目录拷贝到HDFS中
+//        Lists.newArrayList(uploadDir.listFiles()).stream().forEach(f -> {
+//            //上传到HDFS
+//            fsShell.put(f.getAbsolutePath(),"/test/"+currentDate+"/access_log_"+ UUID.randomUUID().toString()+".log");
+//            log.info("上传日志文件{}到目录{}成功",f.getAbsolutePath(),"/test/"+currentDate+"/");
+//            //上传成功，将日志文件移动至备份目录
+//            try {
+//                FileUtils.moveToDirectory(f,new File(BAKUP_LOG_DIR+currentDate),true);
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//            log.info("备份日志文件{}到目录{}成功",f.getAbsolutePath(),BAKUP_LOG_DIR);
+//        });
+//    }
 
 
     //超过24小时的备份日志自动删除
-    @Scheduled(cron = "0/3600 * * * * ?")
+    @Scheduled(initialDelay = 0,fixedDelay = 60*60*1000)
     public void bakUpClean(){
+        log.info("log clean start...");
         File bakupDir = new File(BAKUP_LOG_DIR);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH");
         Lists.newArrayList(bakupDir.listFiles()).stream().forEach(file -> {
